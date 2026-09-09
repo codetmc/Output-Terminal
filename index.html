@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Output Terminal</title>
+<title>Output Terminal - Dynamic Heights & Interactive Boxes</title>
 <style>
   * {
     box-sizing: border-box;
   }
   body {
-    background-color: #ffffff;
+    background-color: #f4f4f5;
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 20px;
@@ -18,15 +18,16 @@
   .editor-controls {
     max-width: 900px;
     margin: 0 auto 20px auto;
-    background: #f4f4f5;
-    padding: 15px;
+    background: #ffffff;
+    padding: 16px;
     border-radius: 8px;
     border: 1px solid #e4e4e7;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   }
 
   textarea {
     width: 100%;
-    height: 140px;
+    height: 120px;
     font-family: 'Courier New', Courier, monospace;
     font-size: 13px;
     background-color: #18181b;
@@ -38,7 +39,7 @@
   }
 
   .btn-group {
-    margin-top: 10px;
+    margin-top: 12px;
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
@@ -52,38 +53,76 @@
     border-radius: 5px;
     cursor: pointer;
     color: white;
+    transition: background-color 0.2s ease;
   }
 
   .btn-preview { background-color: #16a34a; }
+  .btn-add { background-color: #0d9488; }
   .btn-pdf { background-color: #dc2626; }
   .btn-img { background-color: #2563eb; }
   button:hover { opacity: 0.9; }
 
-  /* Output Screen Matching Screenshot */
+  /* Output Container */
   #capture-area {
     background-color: #ffffff;
     padding: 20px;
     max-width: 900px;
     margin: 0 auto;
+    border-radius: 6px;
   }
 
+  /* Grid Layout */
   .grid-container {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
+    align-items: start; /* Prevents short boxes from stretching to match taller adjacent boxes */
   }
 
-  .box {
+  /* Individual Terminal Box */
+  .box-wrapper {
+    position: relative;
     background-color: #0d0d0d;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .box-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    background: #1a1a1a;
+    padding: 3px 8px;
+  }
+
+  .btn-delete {
+    background: transparent;
+    color: #ef4444;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+  }
+  .btn-delete:hover {
+    color: #f87171;
+  }
+
+  .box-content {
     color: #ffffff;
     font-family: 'Courier New', Courier, monospace;
     font-size: 13.5px;
     line-height: 1.35;
-    padding: 16px 18px;
-    border-radius: 2px;
+    padding: 14px 16px;
     white-space: pre-wrap;
     word-break: break-word;
-    min-height: 180px;
+    min-height: auto; /* Fits content height dynamically */
+    outline: none;
+  }
+
+  /* Hide toolbar controls when generating PDF/Image */
+  .exporting .box-toolbar {
+    display: none !important;
   }
 </style>
 
@@ -93,7 +132,12 @@
 <body>
 
 <div class="editor-controls">
-  <textarea id="inputText" placeholder="Enter output text here...">Enter employee name: aryan
+  <label style="font-size: 14px; font-weight: bold; display: block; margin-bottom: 6px;">
+    Master Content Editor (Separate boxes using ===):
+  </label>
+  <textarea id="inputText" placeholder="Enter output text here...">sudeep
+===
+Enter employee name: aryan
 Enter employee ID: 32
 Enter department: IT
 
@@ -103,55 +147,14 @@ Employee ID : 32
 Department  : IT
 Arjun Paudel
 ===
-Enter name: aryan
-Enter age: 32
-Enter roll number: 23
-Enter marks: 33
-
---- Student Result ---
-Name: aryan
-Age: 32
-Roll No: 23
-Marks: 33
-Arjun Paudel
-===
-Enter student name: aryan
-Enter academic marks: 33
-Enter sports score: 93
-
---- Student Information ---
-Name            : aryan
-Academic Marks  : 33
-Sports Score    : 93
-Arjun Paudel
-===
 Area of Rectangle = 50
 Area of Circle = 153.938
 Area of Triangle = 24
-Arjun Paudel
-===
-Accessing from Derived Class
-Public member:10
-Protected member:20
-
-Accessing from Main function
-Public member:10
-Arjun Paudel
-===
-Public Inheritance:
-Public member:10
-Protected member :20
-
-Private Inheritance:
-Public member :10
-Protected member:20
-
-Access from main function:
-Public member through PublicDerived:10
 Arjun Paudel</textarea>
 
   <div class="btn-group">
-    <button class="btn-preview" onclick="renderGrid()">Update Preview</button>
+    <button class="btn-preview" onclick="renderGrid()">Sync Preview</button>
+    <button class="btn-add" onclick="addNewBox()">+ Add New Box</button>
     <button class="btn-pdf" onclick="exportPDF()">Save PDF</button>
     <button class="btn-img" onclick="exportImage('png')">Save PNG Image</button>
   </div>
@@ -167,22 +170,55 @@ Arjun Paudel</textarea>
     const grid = document.getElementById('grid');
     grid.innerHTML = '';
 
-    // Separate blocks using '===' delimiter
     const items = raw.split(/^===$/m);
 
     items.forEach(text => {
       const trimmed = text.trim();
       if (trimmed) {
-        const box = document.createElement('div');
-        box.className = 'box';
-        box.textContent = trimmed;
-        grid.appendChild(box);
+        createBoxElement(trimmed);
       }
     });
   }
 
+  function createBoxElement(content = '') {
+    const grid = document.getElementById('grid');
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'box-wrapper';
+
+    // Top control bar inside box
+    const toolbar = document.createElement('div');
+    toolbar.className = 'box-toolbar';
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'btn-delete';
+    deleteBtn.innerHTML = '&times;';
+    deleteBtn.title = 'Remove Box';
+    deleteBtn.onclick = function() {
+      wrapper.remove();
+    };
+
+    toolbar.appendChild(deleteBtn);
+
+    // Editable content block
+    const boxContent = document.createElement('div');
+    boxContent.className = 'box-content';
+    boxContent.contentEditable = 'true';
+    boxContent.textContent = content;
+
+    wrapper.appendChild(toolbar);
+    wrapper.appendChild(boxContent);
+    grid.appendChild(wrapper);
+  }
+
+  function addNewBox() {
+    createBoxElement('Type new content here...');
+  }
+
   function exportPDF() {
     const element = document.getElementById('capture-area');
+    element.classList.add('exporting');
+
     const opt = {
       margin:       8,
       filename:     'terminal-output.pdf',
@@ -190,20 +226,26 @@ Arjun Paudel</textarea>
       html2canvas:  { scale: 2 },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
-    html2pdf().set(opt).from(element).save();
+
+    html2pdf().set(opt).from(element).save().then(() => {
+      element.classList.remove('exporting');
+    });
   }
 
   function exportImage(format) {
     const element = document.getElementById('capture-area');
+    element.classList.add('exporting');
+
     html2canvas(element, { scale: 2 }).then(canvas => {
       const a = document.createElement('a');
       a.download = `terminal-output.${format}`;
       a.href = canvas.toDataURL(`image/${format}`);
       a.click();
+      element.classList.remove('exporting');
     });
   }
 
-  // Initial render
+  // Initial render on page load
   renderGrid();
 </script>
 
