@@ -54,42 +54,106 @@
     flex: 1;
   }
 
-  /* Sidebar Guide */
+  /* Interactive Sidebar Guide */
   sidebar {
     width: 320px;
     background-color: #ffffff;
     border-right: 1px solid #e2e8f0;
-    padding: 24px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 16px;
   }
-  sidebar h2 {
-    font-size: 16px;
+  .guide-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 10px;
+  }
+  .guide-header h2 {
+    font-size: 15px;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #475569;
-    margin-bottom: 8px;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  .instruction-list {
-    list-style: none;
+  .accordion-container {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
+  }
+  .accordion-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    background-color: #f8fafc;
+  }
+  .accordion-item:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+  }
+  .accordion-header {
+    width: 100%;
+    padding: 12px 14px;
+    background: #ffffff;
+    border: none;
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     font-size: 13.5px;
+    font-weight: 600;
     color: #334155;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.2s ease;
+  }
+  .accordion-header:hover {
+    background-color: #f1f5f9;
+  }
+  .accordion-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .accordion-icon {
+    font-size: 14px;
+  }
+  .chevron {
+    font-size: 11px;
+    color: #94a3b8;
+    transition: transform 0.2s ease;
+  }
+  .accordion-item.active .chevron {
+    transform: rotate(180deg);
+  }
+  .accordion-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s cubic-bezier(0, 1, 0, 1), padding 0.25s ease;
+    padding: 0 14px;
+    font-size: 13px;
+    color: #475569;
     line-height: 1.5;
+    background-color: #ffffff;
   }
-  .instruction-list li {
-    position: relative;
-    padding-left: 20px;
+  .accordion-item.active .accordion-body {
+    max-height: 150px;
+    padding: 10px 14px 14px 14px;
+    border-top: 1px solid #f1f5f9;
   }
-  .instruction-list li::before {
-    content: "•";
-    position: absolute;
-    left: 4px;
-    color: #0066cc;
-    font-weight: bold;
+  .code-badge {
+    background: #e2e8f0;
+    color: #0f172a;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
   }
 
   /* Main Area */
@@ -130,7 +194,7 @@
     gap: 10px;
     flex-wrap: wrap;
   }
-  button {
+  button.action-btn {
     padding: 8px 16px;
     font-size: 13px;
     font-weight: 600;
@@ -144,7 +208,7 @@
   .btn-add { background-color: #0066cc; }
   .btn-pdf { background-color: #dc2626; }
   .btn-img { background-color: #ff8c00; }
-  button:hover { opacity: 0.9; }
+  button.action-btn:hover { opacity: 0.9; }
 
   /* Precise A4 Page Dimensions (794px x 1123px @ 96 DPI) */
   #capture-area {
@@ -278,15 +342,77 @@
 
 <div class="app-container">
   <sidebar>
-    <h2>How to Use Guide</h2>
-    <ul class="instruction-list">
-      <li><strong>A4 Document Sizing:</strong> The output page matches standard A4 portrait dimensions ($210\text{mm} \times 297\text{mm}$) for pristine PDF printouts and image exports.</li>
-      <li><strong>Drag and Drop:</strong> Click and hold any terminal box to reorder its position on the grid.</li>
-      <li><strong>Separate Terminal Windows:</strong> Type <code>===</code> on a new line in the editor to split content into individual output boxes.</li>
-      <li><strong>Auto-Resizing Boxes:</strong> Heights expand or shrink automatically according to content length.</li>
-      <li><strong>Direct Box Editing:</strong> Click directly inside any terminal box on screen to edit text in real time.</li>
-      <li><strong>Add or Remove:</strong> Click <strong>+ Add New Box</strong> to add blank boxes, or click <strong>&times;</strong> to remove a box.</li>
-    </ul>
+    <div class="guide-header">
+      <h2>📘 Interactive Guide</h2>
+    </div>
+
+    <div class="accordion-container">
+      <!-- Item 1 -->
+      <div class="accordion-item active">
+        <button class="accordion-header" onclick="toggleAccordion(this)">
+          <span class="accordion-title"><span class="accordion-icon">📐</span> A4 Document Sizing</span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-body">
+          The output area matches standard A4 portrait dimensions (<strong>210mm × 297mm</strong>) for crisp PDF printouts and image exports.
+        </div>
+      </div>
+
+      <!-- Item 2 -->
+      <div class="accordion-item">
+        <button class="accordion-header" onclick="toggleAccordion(this)">
+          <span class="accordion-title"><span class="accordion-icon">🖐️</span> Drag and Drop</span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-body">
+          Click and hold any terminal box handle to drag and reorder its position anywhere on the grid layout.
+        </div>
+      </div>
+
+      <!-- Item 3 -->
+      <div class="accordion-item">
+        <button class="accordion-header" onclick="toggleAccordion(this)">
+          <span class="accordion-title"><span class="accordion-icon">✂️</span> Split Windows</span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-body">
+          Type <span class="code-badge">===</span> on a new line inside the main editor to split content into separate terminal windows.
+        </div>
+      </div>
+
+      <!-- Item 4 -->
+      <div class="accordion-item">
+        <button class="accordion-header" onclick="toggleAccordion(this)">
+          <span class="accordion-title"><span class="accordion-icon">↕️</span> Auto-Resizing</span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-body">
+          Terminal box heights automatically adjust to fit your code outputs without breaking layout alignment.
+        </div>
+      </div>
+
+      <!-- Item 5 -->
+      <div class="accordion-item">
+        <button class="accordion-header" onclick="toggleAccordion(this)">
+          <span class="accordion-title"><span class="accordion-icon">✏️</span> Direct Editing</span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-body">
+          Click directly inside any terminal box on screen to edit or format text live on the canvas.
+        </div>
+      </div>
+
+      <!-- Item 6 -->
+      <div class="accordion-item">
+        <button class="accordion-header" onclick="toggleAccordion(this)">
+          <span class="accordion-title"><span class="accordion-icon">➕</span> Add or Remove</span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-body">
+          Use <strong>+ Add New Box</strong> to insert empty terminals, or click <strong>&times;</strong> on any box header to delete it instantly.
+        </div>
+      </div>
+    </div>
   </sidebar>
 
   <main>
@@ -301,10 +427,10 @@ Arjun Paudel
 Biraj Pandey</textarea>
 
       <div class="btn-group">
-        <button class="btn-preview" onclick="renderGrid()">Sync Preview</button>
-        <button class="btn-add" onclick="addNewBox()">+ Add New Box</button>
-        <button class="btn-pdf" onclick="exportPDF()">Save PDF (A4)</button>
-        <button class="btn-img" onclick="exportImage('png')">Save PNG (A4)</button>
+        <button class="action-btn btn-preview" onclick="renderGrid()">Sync Preview</button>
+        <button class="action-btn btn-add" onclick="addNewBox()">+ Add New Box</button>
+        <button class="action-btn btn-pdf" onclick="exportPDF()">Save PDF (A4)</button>
+        <button class="action-btn btn-img" onclick="exportImage('png')">Save PNG (A4)</button>
       </div>
     </div>
 
@@ -330,6 +456,19 @@ Biraj Pandey</textarea>
 </div>
 
 <script>
+  function toggleAccordion(button) {
+    const item = button.parentElement;
+    const isActive = item.classList.contains('active');
+    
+    document.querySelectorAll('.accordion-item').forEach(el => {
+      el.classList.remove('active');
+    });
+
+    if (!isActive) {
+      item.classList.add('active');
+    }
+  }
+
   function renderGrid() {
     const raw = document.getElementById('inputText').value;
     const grid = document.getElementById('grid');
