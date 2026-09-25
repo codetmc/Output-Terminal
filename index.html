@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CodeTMC - Lab Output & Multi-Page Generator</title>
+<title>CodeTMC - Interactive Output Terminal</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -82,7 +82,7 @@
 
   /* Interactive Sidebar Guide */
   sidebar {
-    width: 300px;
+    width: 280px;
     background-color: #ffffff;
     border-right: 1px solid #e2e8f0;
     padding: 20px;
@@ -164,8 +164,9 @@
   /* Precise A4 Dimensions (794px x 1123px @ 96 DPI) */
   .a4-page {
     width: 794px;
-    min-height: 1123px;
     height: 1123px;
+    min-height: 1123px;
+    max-height: 1123px;
     background-color: #ffffff;
     padding: 40px;
     border-radius: 4px;
@@ -175,8 +176,8 @@
     flex-direction: column;
     justify-content: space-between;
     position: relative;
-    page-break-after: always;
     box-sizing: border-box;
+    overflow: hidden;
   }
 
   .page-tag {
@@ -247,7 +248,12 @@
     height: fit-content;
     position: relative;
     border: 1px solid #1e293b;
+    cursor: grab;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
+  .box-wrapper:active { cursor: grabbing; }
+  .box-wrapper.dragging { opacity: 0.4; transform: scale(0.98); }
+
   .box-toolbar {
     display: flex;
     justify-content: space-between;
@@ -283,12 +289,15 @@
     background-color: #ffffff;
     border: 2px dashed #cbd5e1;
     border-radius: 8px;
-    padding: 10px;
+    padding: 8px;
     position: relative;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    cursor: grab;
   }
+  .image-box-wrapper.dragging { opacity: 0.4; }
+
   .image-preview-viewport {
     width: 100%;
     height: 220px;
@@ -296,9 +305,8 @@
     position: relative;
     background: #0f172a;
     border-radius: 4px;
-    cursor: grab;
+    cursor: move;
   }
-  .image-preview-viewport:active { cursor: grabbing; }
   .image-preview-viewport img {
     position: absolute;
     top: 0;
@@ -317,8 +325,17 @@
   }
   .image-controls label { font-weight: 700; color: #334155; }
   .image-controls input[type="range"] { flex: 1; }
+  .btn-rotate {
+    background: #0066cc;
+    color: white;
+    border: none;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
+  }
 
-  /* Hide Toolbar Controls During PDF/PNG Export */
+  /* Hide Controls During PDF/PNG Export */
   .exporting .box-toolbar,
   .exporting .btn-delete-page,
   .exporting .page-tag,
@@ -338,8 +355,8 @@
   }
 </style>
 
-<!-- PDF & Canvas Export Engine Libraries -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- html2pdf & html2canvas Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
@@ -376,25 +393,25 @@
           <span>▼</span>
         </button>
         <div class="accordion-body">
-          Add multiple A4 pages using <strong>+ Add Page</strong>. All pages will compile into a single downloadable PDF document.
+          Add multiple A4 pages using <strong>+ Add Page</strong>. All pages compile cleanly without extra blank sheets!
         </div>
       </div>
 
       <div class="accordion-item">
         <button class="accordion-header" onclick="toggleAccordion(this)">
-          <span>🖼️ Screenshot & Image Engine</span>
+          <span>🖐️ Drag & Reorder</span>
         </button>
         <div class="accordion-body">
-          Upload circuit diagrams, SPSS plots, or code screenshots. Drag to adjust position, zoom in/out, and rotate directly on canvas.
+          Click and hold any terminal box handle (<code>⠿ Drag</code>) to reorder its position anywhere on the page grid.
         </div>
       </div>
 
       <div class="accordion-item">
         <button class="accordion-header" onclick="toggleAccordion(this)">
-          <span>✏️ Live On-Screen Editing</span>
+          <span>🖼️ Screenshot Crop & Adjust</span>
         </button>
         <div class="accordion-body">
-          Click inside any dark terminal box directly on the page to edit code, output results, or text notes live.
+          Drag directly inside the uploaded screenshot to pan/crop, use the zoom slider, or click rotate.
         </div>
       </div>
     </div>
@@ -402,7 +419,7 @@
 
   <main>
     <div id="pages-container">
-      <!-- Default First Page -->
+      <!-- Default Page 1 -->
       <div class="a4-page" id="page-1">
         <span class="page-tag">Page 1</span>
         <div class="canvas-content">
@@ -413,11 +430,11 @@
             <span style="font-size: 12.5px; color: #64748b; font-weight: 600;">Lab Report Output Sheet</span>
           </div>
 
-          <div class="grid-container">
-            <!-- Sample Initial Box 1 -->
-            <div class="box-wrapper">
+          <div class="grid-container" id="grid-page-1">
+            <!-- Box 1 -->
+            <div class="box-wrapper" draggable="true">
               <div class="box-toolbar">
-                <span>⠿ Terminal Output</span>
+                <span>⠿ Drag</span>
                 <button class="btn-delete" onclick="this.closest('.box-wrapper').remove()">&times;</button>
               </div>
               <div class="box-content" contenteditable="true">Arjun Paudel
@@ -426,10 +443,10 @@ Area of Circle = 153.938
 Area of Triangle = 24</div>
             </div>
 
-            <!-- Sample Initial Box 2 -->
-            <div class="box-wrapper">
+            <!-- Box 2 -->
+            <div class="box-wrapper" draggable="true">
               <div class="box-toolbar">
-                <span>⠿ Terminal Output</span>
+                <span>⠿ Drag</span>
                 <button class="btn-delete" onclick="this.closest('.box-wrapper').remove()">&times;</button>
               </div>
               <div class="box-content" contenteditable="true">Biraj Pandey
@@ -458,7 +475,7 @@ TU CSIT Semester 2</div>
     if (!isActive) item.classList.add('active');
   }
 
-  // Add a new A4 Page dynamically
+  // Add new A4 Page
   function addNewA4Page() {
     pageCount++;
     const container = document.getElementById('pages-container');
@@ -475,7 +492,7 @@ TU CSIT Semester 2</div>
           </div>
           <span style="font-size: 12.5px; color: #64748b; font-weight: 600;">Lab Report Output Sheet</span>
         </div>
-        <div class="grid-container"></div>
+        <div class="grid-container" id="grid-page-${pageCount}"></div>
       </div>
       <div class="export-footer">
         <span>Generated via CodeTMC Lab Terminal</span>
@@ -483,12 +500,12 @@ TU CSIT Semester 2</div>
       </div>
     `;
     container.appendChild(newPage);
+    initGridDragEvents(newPage.querySelector('.grid-container'));
   }
 
   function deletePage(pageId) {
-    const page = document.getElementById(pageId);
     if (document.querySelectorAll('.a4-page').length > 1) {
-      page.remove();
+      document.getElementById(pageId).remove();
     } else {
       alert('You must have at least one page.');
     }
@@ -496,20 +513,24 @@ TU CSIT Semester 2</div>
 
   // Add Text Terminal Box
   function addTextBoxToCurrentPage() {
-    const latestGrid = document.querySelector('.a4-page:last-child .grid-container');
+    const pages = document.querySelectorAll('.a4-page');
+    const latestGrid = pages[pages.length - 1].querySelector('.grid-container');
+    
     const wrapper = document.createElement('div');
     wrapper.className = 'box-wrapper';
+    wrapper.draggable = true;
     wrapper.innerHTML = `
       <div class="box-toolbar">
-        <span>⠿ Terminal Output</span>
+        <span>⠿ Drag</span>
         <button class="btn-delete" onclick="this.closest('.box-wrapper').remove()">&times;</button>
       </div>
       <div class="box-content" contenteditable="true">Click here to edit output...</div>
     `;
     latestGrid.appendChild(wrapper);
+    attachDragEvents(wrapper);
   }
 
-  // Image Upload & Interactive Drag/Scale Engine
+  // Image Upload Engine
   function triggerImageUpload() {
     document.getElementById('globalImageInput').click();
   }
@@ -525,82 +546,145 @@ TU CSIT Semester 2</div>
   }
 
   function createImageBox(imageSrc) {
-    const latestGrid = document.querySelector('.a4-page:last-child .grid-container');
+    const pages = document.querySelectorAll('.a4-page');
+    const latestGrid = pages[pages.length - 1].querySelector('.grid-container');
     const wrapper = document.createElement('div');
     wrapper.className = 'image-box-wrapper';
+    wrapper.draggable = true;
 
     const uniqueId = 'img_' + Math.random().toString(36).substr(2, 9);
 
     wrapper.innerHTML = `
       <div class="box-toolbar" style="background:#f1f5f9; color:#334155;">
-        <span>🖼️ Image / Screenshot</span>
+        <span>🖼️ Drag Box Header to Move</span>
         <button class="btn-delete" onclick="this.closest('.image-box-wrapper').remove()">&times;</button>
       </div>
       <div class="image-preview-viewport" id="viewport_${uniqueId}">
-        <img src="${imageSrc}" id="img_${uniqueId}" style="transform: translate(0px, 0px) scale(1);">
+        <img src="${imageSrc}" id="${uniqueId}" style="transform: translate(0px, 0px) scale(1) rotate(0deg);">
       </div>
       <div class="image-controls">
         <label>Zoom:</label>
-        <input type="range" min="0.5" max="3" step="0.05" value="1" oninput="adjustImageScale('${uniqueId}', this.value)">
+        <input type="range" min="0.5" max="3" step="0.05" value="1" oninput="adjustImageTransform('${uniqueId}', 'scale', this.value)">
+        <button class="btn-rotate" onclick="rotateImage('${uniqueId}')">🔄 Rotate</button>
       </div>
     `;
 
     latestGrid.appendChild(wrapper);
-    initImageDrag(`viewport_${uniqueId}`, `img_${uniqueId}`);
+    attachDragEvents(wrapper);
+    initImagePan(`viewport_${uniqueId}`, uniqueId);
   }
 
-  function adjustImageScale(id, scaleVal) {
-    const img = document.getElementById(`img_${id}`);
-    img.dataset.scale = scaleVal;
+  function adjustImageTransform(id, type, val) {
+    const img = document.getElementById(id);
+    if (type === 'scale') img.dataset.scale = val;
+    applyImageStyle(img);
+  }
+
+  function rotateImage(id) {
+    const img = document.getElementById(id);
+    let rot = parseInt(img.dataset.rotate || 0) + 90;
+    if (rot >= 360) rot = 0;
+    img.dataset.rotate = rot;
+    applyImageStyle(img);
+  }
+
+  function applyImageStyle(img) {
     const posX = img.dataset.posX || 0;
     const posY = img.dataset.posY || 0;
-    img.style.transform = `translate(${posX}px, ${posY}px) scale(${scaleVal})`;
+    const scale = img.dataset.scale || 1;
+    const rotate = img.dataset.rotate || 0;
+    img.style.transform = `translate(${posX}px, ${posY}px) scale(${scale}) rotate(${rotate}deg)`;
   }
 
-  function initImageDrag(viewportId, imgId) {
+  function initImagePan(viewportId, imgId) {
     const viewport = document.getElementById(viewportId);
     const img = document.getElementById(imgId);
-    let isDragging = false;
+    let isPanning = false;
     let startX, startY, currentX = 0, currentY = 0;
 
     viewport.addEventListener('mousedown', (e) => {
-      isDragging = true;
+      e.stopPropagation(); // Prevents dragging entire box while panning inside image
+      isPanning = true;
       startX = e.clientX - currentX;
       startY = e.clientY - currentY;
     });
 
     window.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
+      if (!isPanning) return;
       currentX = e.clientX - startX;
       currentY = e.clientY - startY;
       img.dataset.posX = currentX;
       img.dataset.posY = currentY;
-      const scale = img.dataset.scale || 1;
-      img.style.transform = `translate(${currentX}px, ${currentY}px) scale(${scale})`;
+      applyImageStyle(img);
     });
 
-    window.addEventListener('mouseup', () => { isDragging = false; });
+    window.addEventListener('mouseup', () => { isPanning = false; });
   }
 
-  // Functional Multi-Page PDF Download
-  function exportAllPagesToPDF() {
+  // --- Drag and Drop Reordering Engine ---
+  function attachDragEvents(el) {
+    el.addEventListener('dragstart', (e) => {
+      el.classList.add('dragging');
+    });
+
+    el.addEventListener('dragend', () => {
+      el.classList.remove('dragging');
+    });
+  }
+
+  function initGridDragEvents(grid) {
+    grid.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const draggingItem = document.querySelector('.dragging');
+      if (!draggingItem) return;
+
+      const siblings = [...grid.querySelectorAll('.box-wrapper:not(.dragging), .image-box-wrapper:not(.dragging)')];
+      const nextSibling = siblings.find(sibling => {
+        const box = sibling.getBoundingClientRect();
+        return e.clientY <= box.top + box.height / 2;
+      });
+
+      grid.insertBefore(draggingItem, nextSibling || null);
+    });
+  }
+
+  // Initialize initial drag events
+  document.querySelectorAll('.grid-container').forEach(initGridDragEvents);
+  document.querySelectorAll('.box-wrapper').forEach(attachDragEvents);
+
+  // --- PERFECT 0-ERROR PDF EXPORT ENGINE (NO BLANK PAGES) ---
+  async function exportAllPagesToPDF() {
     document.body.classList.add('exporting');
-    const element = document.getElementById('pages-container');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    
+    const pages = document.querySelectorAll('.a4-page');
 
-    const opt = {
-      margin: 0,
-      filename: 'CodeTMC-Lab-Outputs.pdf',
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i];
+      
+      const canvas = await html2canvas(page, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        width: 794,
+        height: 1123
+      });
 
-    html2pdf().set(opt).from(element).save().then(() => {
-      document.body.classList.remove('exporting');
-    });
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      
+      if (i > 0) {
+        pdf.addPage();
+      }
+
+      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+    }
+
+    pdf.save('CodeTMC-Lab-Outputs.pdf');
+    document.body.classList.remove('exporting');
   }
 
-  // PNG Export
+  // Save Page 1 as PNG
   function exportAsPNG() {
     document.body.classList.add('exporting');
     const element = document.querySelector('.a4-page');
